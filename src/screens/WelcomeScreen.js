@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen({ navigation }) {
   useEffect(() => {
@@ -10,24 +11,29 @@ export default function WelcomeScreen({ navigation }) {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bienvenido a MovieFinder</Text>
-      <Text style={styles.subtitle}>Tu app para descubrir películas</Text>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Bienvenido a MovieFinder</Text>
+        <Text style={styles.subtitle}>Tu app para descubrir películas</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#60c8d7',
+  },
   container: {
     flex: 1,
     justifyContent:'center',
     alignItems:'center',
-    backgroundColor: '#60c8d7', // cyan suave
     padding: 20,
   },
   title: {
     fontSize: 32,
-    color: '#004d59', // azul oscuro para contraste
+    color: '#004d59',
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.15)',
     textShadowOffset: { width: 1, height: 1 },
@@ -36,7 +42,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    color: '#00343a', // azul más oscuro para el subtítulo
+    color: '#00343a',
     marginTop: 12,
     fontStyle: 'italic',
     textAlign: 'center',

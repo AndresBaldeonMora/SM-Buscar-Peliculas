@@ -7,9 +7,11 @@ import {
   StyleSheet,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { searchMovies } from "../services/movies";
 import MovieCard from "../components/MovieCard";
 import SearchBar from "../components/SearchBar";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CatalogScreen() {
   const navigation = useNavigation();
@@ -20,6 +22,31 @@ export default function CatalogScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [favoriteGenres, setFavoriteGenres] = useState([]);
+
+  useEffect(() => {
+    const loadGenres = async () => {
+      const storedGenres = await AsyncStorage.getItem("favoriteGenres");
+      if (storedGenres) {
+        const parsedGenres = JSON.parse(storedGenres);
+        setFavoriteGenres(parsedGenres);
+        fetchSuggestions(parsedGenres);
+      }
+    };
+
+    loadGenres();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") return;
+
+    const delayDebounce = setTimeout(() => {
+      setPage(1);
+      fetchMovies(searchTerm, 1);
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
 
   const fetchMovies = async (search, pageNum) => {
     if (search.trim() === "") {
@@ -43,7 +70,7 @@ export default function CatalogScreen() {
         } else {
           setMovies((prev) => [...prev, ...results]);
         }
-        setHasMore(results.length === 10); // OMDb devuelve 10 por página
+        setHasMore(results.length === 10);
       } else {
         if (pageNum === 1) setMovies([]);
         setHasMore(false);
@@ -56,17 +83,34 @@ export default function CatalogScreen() {
     }
   };
 
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      setPage(1);
-      fetchMovies(searchTerm, 1);
-    }, 500);
+  const fetchSuggestions = async (genres) => {
+    if (!genres || genres.length === 0) return;
 
-    return () => clearTimeout(delayDebounce);
-  }, [searchTerm]);
+    setLoading(true);
+    try {
+      const queries = genres.map((g) =>
+        g.toLowerCase().split(" ")[0]
+      );
+
+      const allResults = [];
+
+      for (const term of queries) {
+        const res = await searchMovies({ search: term, page: 1 });
+        if (res && res.length > 0) {
+          allResults.push(...res.slice(0, 3));
+        }
+      }
+
+      setMovies(allResults);
+    } catch (error) {
+      console.error("Error al buscar sugerencias:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
+    if (!loadingMore && hasMore && searchTerm.trim() !== "") {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchMovies(searchTerm, nextPage);
@@ -75,7 +119,9 @@ export default function CatalogScreen() {
 
   const renderFooter = () => {
     if (!loadingMore) return null;
-    return <ActivityIndicator size="small" color="#0a84ff" style={{ margin: 16 }} />;
+    return (
+      <ActivityIndicator size="small" color="#0a84ff" style={{ margin: 16 }} />
+    );
   };
 
   const renderItem = ({ item }) => (
@@ -86,30 +132,39 @@ export default function CatalogScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <SearchBar value={searchTerm} onChange={setSearchTerm} />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <SearchBar value={searchTerm} onChange={setSearchTerm} />
 
-      {loading && page === 1 ? (
-        <ActivityIndicator size="large" color="#0a84ff" />
-      ) : movies.length === 0 && searchTerm !== "" ? (
-        <Text style={styles.empty}>No se encontraron películas</Text>
-      ) : (
-        <FlatList
-          data={movies}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-        />
-      )}
-    </View>
+        {loading && page === 1 ? (
+          <ActivityIndicator size="large" color="#0a84ff" />
+        ) : movies.length === 0 ? (
+          <Text style={styles.empty}>No se encontraron películas</Text>
+        ) : (
+          <FlatList
+            data={movies}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 12, backgroundColor: "#f0f8ff" },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f0f8ff",
+  },
+  container: {
+    flex: 1,
+    padding: 12,
+  },
   empty: {
     marginTop: 50,
     textAlign: "center",

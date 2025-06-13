@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { getMovieById } from "../services/movies";
 import { FavoritesContext } from "../context/FavoritesContext";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function MovieDetailScreen({ route }) {
   const { id } = route.params;
@@ -20,18 +21,31 @@ export default function MovieDetailScreen({ route }) {
 
   useEffect(() => {
     async function loadMovie() {
-      const data = await getMovieById(id);
-      setMovie(data);
-      setLoading(false);
+      try {
+        const data = await getMovieById(id);
+        setMovie(data);
+      } catch (error) {
+        console.error("Error al obtener detalle:", error);
+      } finally {
+        setLoading(false);
+      }
     }
     loadMovie();
   }, [id]);
 
-  if (loading || !movie) {
+  if (loading) {
     return (
-      <View style={styles.loader}>
+      <SafeAreaView style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#0a84ff" />
-      </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!movie) {
+    return (
+      <SafeAreaView style={styles.loaderContainer}>
+        <Text style={styles.errorText}>No se pudo cargar la información de la película.</Text>
+      </SafeAreaView>
     );
   }
 
@@ -51,35 +65,44 @@ export default function MovieDetailScreen({ route }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Image
-        source={{ uri: movie.Poster !== "N/A" ? movie.Poster : "https://via.placeholder.com/300x450" }}
-        style={styles.poster}
-      />
-      <Text style={styles.title}>{movie.Title}</Text>
-      <Text style={styles.detail}>Año: {movie.Year}</Text>
-      <Text style={styles.detail}>Género: {movie.Genre}</Text>
-      <Text style={styles.detail}>Director: {movie.Director}</Text>
-      <Text style={styles.detail}>Actores: {movie.Actors}</Text>
-      <Text style={styles.detail}>Duración: {movie.Runtime}</Text>
-      <Text style={styles.plot}>{movie.Plot}</Text>
-
-      <View style={styles.buttonContainer}>
-        <Button
-          title={isFavorite ? "Eliminar de Favoritos" : "Agregar a Favoritos"}
-          onPress={handleFavoriteToggle}
-          color={isFavorite ? "#e63946" : "#0a84ff"}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f0f8ff" }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Image
+          source={{ uri: movie.Poster !== "N/A" ? movie.Poster : "https://via.placeholder.com/300x450" }}
+          style={styles.poster}
         />
-      </View>
-    </ScrollView>
+        <Text style={styles.title}>{movie.Title}</Text>
+        <Text style={styles.detail}>Año: {movie.Year}</Text>
+        <Text style={styles.detail}>Género: {movie.Genre}</Text>
+        <Text style={styles.detail}>Director: {movie.Director}</Text>
+        <Text style={styles.detail}>Actores: {movie.Actors}</Text>
+        <Text style={styles.detail}>Duración: {movie.Runtime}</Text>
+        <Text style={styles.plot}>{movie.Plot}</Text>
+
+        <View style={styles.buttonContainer}>
+          <Button
+            title={isFavorite ? "Eliminar de Favoritos" : "Agregar a Favoritos"}
+            onPress={handleFavoriteToggle}
+            color={isFavorite ? "#e63946" : "#0a84ff"}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  loader: {
+  loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f0f8ff",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#e63946",
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
   container: {
     padding: 20,

@@ -5,8 +5,10 @@ import {
   Button,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
+  Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const genres = [
   "Acción",
@@ -28,8 +30,21 @@ export default function PreferencesScreen({ navigation }) {
     }
   };
 
+  const handleContinue = async () => {
+    try {
+      await AsyncStorage.setItem(
+        "favoriteGenres",
+        JSON.stringify(selectedGenres)
+      );
+      navigation.replace("Main"); // navega al TabNavigator
+    } catch (error) {
+      Alert.alert("Error", "No se pudo guardar tus preferencias.");
+      console.error(error);
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>¿Cuáles son tus géneros favoritos?</Text>
 
       <View style={styles.genresContainer}>
@@ -40,9 +55,14 @@ export default function PreferencesScreen({ navigation }) {
               key={genre}
               style={[styles.genreButton, isSelected && styles.genreSelected]}
               onPress={() => toggleGenre(genre)}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.genreText, isSelected && styles.genreTextSelected]}>
+              <Text
+                style={[
+                  styles.genreText,
+                  isSelected && styles.genreTextSelected,
+                ]}
+              >
                 {genre}
               </Text>
             </TouchableOpacity>
@@ -53,21 +73,20 @@ export default function PreferencesScreen({ navigation }) {
       <View style={styles.buttonContainer}>
         <Button
           title="Continuar"
-          onPress={() =>
-            navigation.replace("Catalog", { genres: selectedGenres })
-          }
+          onPress={handleContinue}
           disabled={selectedGenres.length === 0}
+          color={selectedGenres.length === 0 ? "#ccc" : "#0a84ff"}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingTop: 40,
     alignItems: "center",
     backgroundColor: "#f2f2f2",
   },
@@ -82,7 +101,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 12, // Para espaciado, funciona en RN 0.71+ o puedes usar margin
+    rowGap: 12,
+    columnGap: 12,
   },
   genreButton: {
     borderWidth: 1,
@@ -90,8 +110,8 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    margin: 6,
     backgroundColor: "#fff",
+    margin: 6,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
