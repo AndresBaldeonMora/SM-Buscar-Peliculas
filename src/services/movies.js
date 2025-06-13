@@ -21,3 +21,14 @@ export async function searchMovies({ search, page = 1 }) {
     console.error(error.message);
   }
 }
+
+export async function getMovieById(id) {
+  try {
+    const response = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&i=${id}`);
+    if (!response.ok) throw new Error("No se pudo cargar el detalle");
+    const movie = await response.json();
+    return movie;
+  } catch (error) {
+    console.error(error.message);
+  }
+}

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  TextInput,
-  FlatList,
   Text,
-  StyleSheet,
-  Image,
+  FlatList,
   ActivityIndicator,
+  StyleSheet,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { searchMovies } from "../services/movies";
+import MovieCard from "../components/MovieCard";
+import SearchBar from "../components/SearchBar";
 
 export default function CatalogScreen() {
+  const navigation = useNavigation();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [movies, setMovies] = useState([]);
   const [page, setPage] = useState(1);
@@ -40,7 +43,7 @@ export default function CatalogScreen() {
         } else {
           setMovies((prev) => [...prev, ...results]);
         }
-        setHasMore(results.length === 10);
+        setHasMore(results.length === 10); // OMDb devuelve 10 por página
       } else {
         if (pageNum === 1) setMovies([]);
         setHasMore(false);
@@ -76,30 +79,15 @@ export default function CatalogScreen() {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.item}>
-      {item.poster !== "N/A" ? (
-        <Image source={{ uri: item.poster }} style={styles.poster} />
-      ) : (
-        <View style={[styles.poster, styles.noImage]}>
-          <Text>No Image</Text>
-        </View>
-      )}
-      <View style={styles.info}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.year}>{item.year}</Text>
-      </View>
-    </View>
+    <MovieCard
+      movie={item}
+      onPress={() => navigation.navigate("MovieDetail", { id: item.id })}
+    />
   );
 
   return (
     <View style={styles.container}>
-      <TextInput
-        placeholder="Buscar película..."
-        style={styles.input}
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-        autoCorrect={false}
-      />
+      <SearchBar value={searchTerm} onChange={setSearchTerm} />
 
       {loading && page === 1 ? (
         <ActivityIndicator size="large" color="#0a84ff" />
@@ -122,46 +110,6 @@ export default function CatalogScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 12, backgroundColor: "#f0f8ff" },
-  input: {
-    height: 44,
-    borderColor: "#0a84ff",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-  },
-  item: {
-    flexDirection: "row",
-    marginBottom: 16,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    overflow: "hidden",
-    elevation: 2,
-  },
-  poster: {
-    width: 100,
-    height: 150,
-  },
-  noImage: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ccc",
-  },
-  info: {
-    flex: 1,
-    padding: 10,
-    justifyContent: "center",
-  },
-  title: {
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  year: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 6,
-  },
   empty: {
     marginTop: 50,
     textAlign: "center",
